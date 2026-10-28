@@ -153,6 +153,7 @@ void Entity::checkCollisionX(
  */
 bool Entity::isColliding(Entity *other) const
 {
+    if (other == nullptr){return false;}
     float xDistance = fabs(mPosition.x - other->getPosition().x) -
         ((mColliderDimensions.x + other->getColliderDimensions().x) / 2.0f);
     float yDistance = fabs(mPosition.y - other->getPosition().y) -
@@ -209,20 +210,10 @@ void Entity::update(
 
     resetColliderFlags();
 
-    mVelocity.x = mMovement.x * mSpeed;
+    //mVelocity.x = mMovement.x * mSpeed;
 
     mVelocity.x += mAcceleration.x * deltaTime;
     mVelocity.y += mAcceleration.y * deltaTime;
-
-    // // ––––– JUMPING ––––– //
-    // if (mIsJumping)
-    // {
-    //     // STEP 1: Immediately return the flag to its original false state
-    //     mIsJumping = false;
-    //
-    //     // STEP 2: The player now acquires an upward velocity
-    //     mVelocity.y -= mJumpingPower;
-    // }
 
     mPosition.y += mVelocity.y * deltaTime;
     checkCollisionY(collidableEntities, collisionCheckCount);
@@ -230,11 +221,8 @@ void Entity::update(
     mPosition.x += mVelocity.x * deltaTime;
     checkCollisionX(collidableEntities, collisionCheckCount);
 
-    // Only animate if we're on the ground (not necessary)
-    //     if (mTextureType == ATLAS && GetLength(mMovement) != 0 &&
-    //         mIsCollidingBottom)
-    //         animate(deltaTime);
-    // }
+    animate(deltaTime);
+
 }
 
 void Entity::render()
@@ -256,7 +244,8 @@ void Entity::render()
             static_cast<float>(mTexture.height)
         };
         break;
-    case ATLAS:
+        case ATLAS:
+           // std::cout << "render entity atlas" << std::endl;
         textureArea = getUVRectangle(
             &mTexture,
             mAnimationIndices[mCurrentFrameIndex],

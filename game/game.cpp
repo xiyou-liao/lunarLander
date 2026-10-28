@@ -1,19 +1,19 @@
 #include "game.h"
 
-float GetLength(const Vector2 vector){
+float getLength(const Vector2& vector){
     return sqrtf(
         pow(vector.x, 2) + pow(vector.y, 2)
     );
 }
 
-void Normalize(Vector2 *vector){
-    float magnitude = GetLength(*vector);
+void normalize(Vector2 *vector){
+    float magnitude = getLength(*vector);
 
     vector->x /= magnitude;
     vector->y /= magnitude;
 }
 
-Rectangle getUVRectangle(const Texture2D *texture, int index, int rows, int cols){
+Rectangle getUVRectangle(Texture2D *texture, int index, int rows, int cols){
     float uCoord = static_cast<float>(index % cols) / static_cast<float>(cols);
     uCoord *= texture->width;
 

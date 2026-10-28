@@ -18,6 +18,6 @@ enum TextureType { SINGLE, ATLAS       };
 
 void normalize(Vector2* vector);
 float getLength(const Vector2& vector);
-Rectangle getUVRectangle(const Texture2D* texture, int index, int rows, int cols);
+Rectangle getUVRectangle(Texture2D* texture, int index, int rows, int cols);
 
 #endif //LUNARLANDER_GAME_H

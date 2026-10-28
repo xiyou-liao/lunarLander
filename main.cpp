@@ -13,25 +13,29 @@
 using namespace std;
 
 //Global Constants
-constexpr int SCREEN_WIDTH = 2000;
-constexpr int SCREEN_HEIGHT = 2000;
+constexpr int SCREEN_WIDTH = 1200;
+constexpr int SCREEN_HEIGHT = 800;
 constexpr int FPS = 120;
 
 constexpr Vector2 ORIGIN = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
 
 constexpr int NUMBER_OF_GOOD_BLOCKS = 5;
-constexpr int NUMBER_OF_BAD_BLOCKS = 20;
-constexpr float BLOCK_DIMENSION = 50.0f;
-constexpr float ACCELERATION_OF_GRAVITY = 250.0f;
-//don't use ifxed timestep
+constexpr int NUMBER_OF_BAD_TILES = 20;
+constexpr float BLOCK_DIMENSION = 25.0f;
+constexpr float TILE_DIMENSION = 25.0f;
+constexpr float ACCELERATION_OF_GRAVITY = 50.0f;
+
+constexpr float THRUST = 100.0f;
+constexpr float DECELERATION =  50.0f;
+constexpr float ACCELERATION = 75.0f;
 
 //Global Variables
 AppStatus gAppStatus = RUNNING;
 float gPreviousTicks = 0.0f;
-float gTimeAccumulator = 0.0f;
+//float gTimeAccumulator = 0.0f;
 
 Entity *gProtag = nullptr;
-Entity *gBlocks = nullptr;
+Entity *gTiles = nullptr;
 
 //Function Declarations
 void initialize();
@@ -54,7 +58,7 @@ void initialize() {
 
     gProtag = new Entity(
         {100.0f, 100.0f},
-        {250.0f * sizeRatio, 250.0f},
+        {100.0f * sizeRatio, 100.0f},
         "assets/kirby_tornado.png",
         ATLAS,
         {4, 12},
@@ -63,21 +67,50 @@ void initialize() {
     gProtag->setColliderDimensions({gProtag->getScale().x / 3.0f, gProtag->getScale().y / 3.0f});
     gProtag->setAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
 
+    // --------------------------------------
+    gTiles = new Entity[NUMBER_OF_BAD_TILES];
+    float leftMostX = ORIGIN.x - (NUMBER_OF_BAD_TILES * TILE_DIMENSION)/2.0f;
+    for (int i = 0; i<NUMBER_OF_BAD_TILES-1; i++) {
+        gTiles[i].setTexture("assets/block.png");
+        gTiles[i].setScale({TILE_DIMENSION, TILE_DIMENSION});
+        gTiles[i].setColliderDimensions({TILE_DIMENSION, TILE_DIMENSION});
+        gTiles[i].setPosition({
+            leftMostX + i * TILE_DIMENSION,
+            ORIGIN.y + TILE_DIMENSION
+        });
+    }
+    gTiles[NUMBER_OF_BAD_TILES - 1].setTexture("assets/block.png");
+    gTiles[NUMBER_OF_BAD_TILES - 1].setScale({ TILE_DIMENSION, TILE_DIMENSION });
+    gTiles[NUMBER_OF_BAD_TILES - 1].setColliderDimensions({ TILE_DIMENSION, TILE_DIMENSION });
+    gTiles[NUMBER_OF_BAD_TILES - 1].setPosition({
+        ORIGIN.y + TILE_DIMENSION,
+        ORIGIN.y - TILE_DIMENSION
+    });
 
+    SetTargetFPS(FPS);
 }
 
 void processInput() {
-    gProtag->resetMovement();
-    if (IsKeyDown(KEY_A)) gProtag->accelerateLeft();
-    else if (IsKeyDown(KEY_D)) gProtag->accelerateRight();
+    gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
+    if (IsKeyDown(KEY_A)) gProtag->accelerateLeft(ACCELERATION);
+    else if (IsKeyDown(KEY_D)) gProtag->accelerateRight(ACCELERATION);
+    else {
+        if (gProtag->getVelocity().x > 0.0) {gProtag->setAccelerationX(-DECELERATION);}
+        else if (gProtag->getVelocity().x < 0.0) {gProtag->setAccelerationX(DECELERATION);}
+    }
 
-    if (IsKeyPressed(KEY_W)) gProtag->thrust();
+
+    if (IsKeyDown(KEY_W)) gProtag->thrust(THRUST);
+    //else if (!IsKeyPressed(KEY_W)) gProtag->setAcceleration({gProtag->getAcceleration().x, ACCELERATION_OF_GRAVITY});
+
+    //apply drifting
 
     if (getLength(gProtag->getMovement()) > 1.0f) {
         gProtag->normalizeMovement();
     }
 
     if (IsKeyPressed(KEY_Q) || WindowShouldClose()) gAppStatus = TERMINATED;
+
 }
 
 void update() {
@@ -85,10 +118,14 @@ void update() {
     float deltaTime = ticks - gPreviousTicks;
     gPreviousTicks = ticks;
 
-    deltaTime += gTimeAccumulator;
+    //deltaTime += gTimeAccumulator;
 
-    gProtag->update(deltaTime, gBlocks, NUMBER_OF_GOOD_BLOCKS);
-    gTimeAccumulator = deltaTime;
+    gProtag->update(deltaTime, gTiles, NUMBER_OF_BAD_TILES);
+
+    for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
+        gTiles[i].update(deltaTime, nullptr, 0);
+    }
+   // gTimeAccumulator = deltaTime;
 }
 
 void render() {
@@ -96,9 +133,26 @@ void render() {
     ClearBackground(RAYWHITE);
 
     gProtag->render();
-
+    for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
+        gTiles[i].render();
+    }
     EndDrawing();
 }
-int main() {
 
+void shutdown() {
+    delete gProtag;
+    delete[] gTiles;
+    CloseWindow();
+}
+
+int main() {
+    initialize();
+    while (gAppStatus == RUNNING) {
+        processInput();
+        update();
+        render();
+    }
+
+    shutdown();
+    return 0;
 }

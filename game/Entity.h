@@ -35,13 +35,21 @@ public:
     bool isActive() const {return mEntityStatus == ACTIVE;}
 
    //void moveUp() {mMovement.y = -1; mDirection = UP}
-    void accelerateLeft() {mAcceleration.x -= 1; mDirection = LEFT;}
-    void accelerateRight() {mAcceleration.x += 1; mDirection = RIGHT;}
+    void accelerateLeft(float acceleration) {
+        mAcceleration.x = -acceleration;
+        mDirection = LEFT;
+       // std::cout << "acclerating left "<< mPosition.x<< " " << mPosition.y << std::endl;
+    }
+    void accelerateRight(float acceleration) {
+        mAcceleration.x = acceleration;
+        mDirection = RIGHT;
+        //std::cout <<"accelerating right "<< mPosition.x<< " " << mPosition.y <<std::endl;
+    }
     // void accelerateUp() {mAcceleration.y -= 1; mDirection = UP;}
     // void accelerateDown() {mAcceleration.y += 1; mDirection = DOWN;}
-    void resetMovement() {mMovement = {0.0f, 0.0f};}
+    void resetAcceleration(Vector2 acc) {mAcceleration = acc;}
 
-    void thrust() {mAcceleration.y -=1; mDirection = UP;}
+    void thrust(float amountThrust) {mAcceleration.y = -amountThrust; mDirection = UP;}
     //Getters
     const Vector2& getPosition() const {return mPosition;}
     const Vector2& getVelocity() const {return mVelocity;}
@@ -58,10 +66,13 @@ public:
     { mMovement = newMovement;                 }
     void setAcceleration(Vector2 newAcceleration)
     { mAcceleration = newAcceleration;         }
+    void setAccelerationX(float newAcceleration) {
+        mAcceleration.x += newAcceleration;
+    }
     void setScale(Vector2 newScale)
     { mScale = newScale;                       }
     void setTexture(const char *textureFilepath)
-    { mTexture = LoadTexture(textureFilepath); }
+    {mTexture = LoadTexture(textureFilepath);}
     void setColliderDimensions(Vector2 newDimensions)
     { mColliderDimensions = newDimensions;     }
     void setSpriteSheetDimensions(Vector2 newDimensions)
@@ -115,8 +126,9 @@ private:
         mIsCollidingRight  = false;
         mIsCollidingLeft   = false;
     }
-
+    //bool isActive() {return mEntityStatus == ACTIVE;}
     void animate(float deltaTime);
+    bool isThrusting;
 };
 
 #endif //LUNARLANDER_ENTITY_H
