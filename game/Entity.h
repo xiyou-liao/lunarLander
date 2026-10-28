@@ -5,6 +5,7 @@
 
 enum Direction {UP, LEFT, RIGHT, DOWN};
 enum EntityStatus {ACTIVE, INACTIVE};
+enum EntityType {PLAYER, TILE, PLATFORM, NONE};
 
 class Entity {
 public:
@@ -14,13 +15,14 @@ public:
     static constexpr float Y_COLLISION_THRESHOLD = 0.5f;
 
     Entity();
-    Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath);
+    Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath, EntityType entityType);
     Entity(
         const Vector2& position,
         const Vector2& scale,
         const char* textureFilePath,
         TextureType textureType,
         const Vector2& spriteSheetDimensions,
+        EntityType entityType,
         std::map<Direction, std::vector<int>> animationAtlas
     );
     ~Entity();
@@ -47,9 +49,21 @@ public:
     }
     // void accelerateUp() {mAcceleration.y -= 1; mDirection = UP;}
     // void accelerateDown() {mAcceleration.y += 1; mDirection = DOWN;}
-    void resetAcceleration(Vector2 acc) {mAcceleration = acc;}
+    void resetAcceleration(Vector2 acc) {
+        mAcceleration = acc;
+        if (mVelocity.y < 0.0f) mDirection = UP;
+        else if (mVelocity.y > 0.0f) mDirection = DOWN;
+    }
 
-    void thrust(float amountThrust) {mAcceleration.y = -amountThrust; mDirection = UP;}
+    void thrust(float amountThrust) {
+        mAcceleration.y = -amountThrust;
+        mDirection = UP;
+    }
+    void falling() {
+        if (mVelocity.y < 0.0f) mDirection = UP;
+        else if (mVelocity.y > 0.0f) mDirection = DOWN;
+    }
+    bool isOnPlatform() const;
     //Getters
     const Vector2& getPosition() const {return mPosition;}
     const Vector2& getVelocity() const {return mVelocity;}
@@ -59,7 +73,9 @@ public:
     const Vector2& getColliderDimensions() const {return mColliderDimensions;}
     const Vector2& getSpriteSheetDimensions() const {return mSpriteSheetDimensions;}
     const Direction& getDirection() const {return mDirection;}
+    const EntityType& getEntityType() const {return mEntityType;}
 
+    void setEntityType(EntityType entityType) {mEntityType = entityType;}
     void setPosition(Vector2 newPosition)
     { mPosition = newPosition;                 }
     void setMovement(Vector2 newMovement)
@@ -100,7 +116,7 @@ private:
 
     std::map<Direction, std::vector<int>> mAnimationAtlas;
     std::vector<int> mAnimationIndices;
-    Direction mDirection;
+    Direction mDirection = DOWN;
     int mFrameSpeed;
 
     int mCurrentFrameIndex = 0;
@@ -115,7 +131,7 @@ private:
     bool mIsCollidingLeft   = false;
 
     EntityStatus mEntityStatus = ACTIVE;
-
+    EntityType mEntityType;
     bool isColliding(Entity* other) const;
     void checkCollisionY(Entity* collidableEntities, int collisionCheckCount);
     void checkCollisionX(Entity* collidableEntities, int collisionCheckCount);

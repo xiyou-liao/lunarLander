@@ -9,13 +9,13 @@ Entity::Entity() :
     mAnimationAtlas{}, mAnimationIndices{}, mDirection{ RIGHT },
     mFrameSpeed{ 0 }, mSpeed{ DEFAULT_SPEED }, mAngle{ 0.0f } {}
 
-Entity::Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath) :
+Entity::Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath, EntityType entityType) :
     mPosition{ position }, mMovement{ 0.0f, 0.0f },
     mVelocity{ 0.0f, 0.0f }, mAcceleration{ 0.0f, 0.0f },
     mScale{ scale }, mColliderDimensions{ scale },
     mTexture{ LoadTexture(textureFilePath) }, mTextureType{ SINGLE },
     mSpriteSheetDimensions{}, mAnimationAtlas{}, mAnimationIndices{},
-    mDirection{ RIGHT }, mFrameSpeed{ 0 }, mSpeed{ DEFAULT_SPEED },
+    mDirection{ RIGHT }, mFrameSpeed{ 0 }, mSpeed{ DEFAULT_SPEED }, mEntityType(entityType),
     mAngle{ 0.0f } {}
 
 Entity::Entity(
@@ -24,6 +24,7 @@ Entity::Entity(
         const char* textureFilePath,
         TextureType textureType,
         const Vector2& spriteSheetDimensions,
+        EntityType entityType,
         std::map<Direction, std::vector<int>> animationAtlas
 ):
     mPosition{ position }, mMovement{ 0.0f, 0.0f },
@@ -34,6 +35,7 @@ Entity::Entity(
     mAnimationAtlas{ animationAtlas },
     mAnimationIndices{ animationAtlas.at(RIGHT) }, mDirection{ RIGHT },
     mFrameSpeed{ DEFAULT_FRAME_SPEED }, mSpeed{ DEFAULT_SPEED },
+    mEntityType(entityType),
     mAngle{ 0.0f } {}
 
 Entity::~Entity() { UnloadTexture(mTexture); }
@@ -80,12 +82,19 @@ void Entity::checkCollisionY(
                 mPosition.y        -= yOverlap;
                 mVelocity.y         = 0;
                 mIsCollidingBottom  = true;
+                if (collidableEntity->mEntityType == TILE) {
+                    collidableEntity->deactivate();
+                }else if (collidableEntity->mEntityType == PLATFORM) {
+                    deactivate();
+                }
             }
             else if (mVelocity.y < 0)
             {
                 mPosition.y     += yOverlap;
                 mVelocity.y      = 0;
                 mIsCollidingTop  = true;
+
+
             }
         }
     }
@@ -170,18 +179,23 @@ bool Entity::isColliding(Entity *other) const
  */
 void Entity::animate(float deltaTime)
 {
-    mAnimationIndices = mAnimationAtlas.at(mDirection);
+    std::cout << "direction " << mDirection << std::endl;
+    auto it = mAnimationAtlas.find(mDirection);
+    if (it != mAnimationAtlas.end()) {
+        mAnimationTime += deltaTime;
+        float secondsPerFrame = 1.0f / mFrameSpeed;
 
-    mAnimationTime += deltaTime;
-    float secondsPerFrame = 1.0f / mFrameSpeed;
+        if (mAnimationTime >= secondsPerFrame)
+        {
+            mAnimationTime = 0.0f;
 
-    if (mAnimationTime >= secondsPerFrame)
-    {
-        mAnimationTime = 0.0f;
-
-        mCurrentFrameIndex++;
-        mCurrentFrameIndex %= mAnimationIndices.size();
+            mCurrentFrameIndex++;
+            mCurrentFrameIndex %= it->second.size();
+        }
     }
+    //mAnimationIndices = mAnimationAtlas.at(mDirection);
+
+
 }
 
 // void Entity::displayCollider()
@@ -225,6 +239,9 @@ void Entity::update(
 
 }
 
+// bool Entity::isOnPlatform() const {
+//     if ()
+// }
 void Entity::render()
 {
     if (mEntityStatus == INACTIVE) return;

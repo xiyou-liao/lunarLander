@@ -15,7 +15,7 @@
 
 enum AppStatus   { TERMINATED, RUNNING };
 enum TextureType { SINGLE, ATLAS       };
-
+enum WinCondition {};
 void normalize(Vector2* vector);
 float getLength(const Vector2& vector);
 Rectangle getUVRectangle(Texture2D* texture, int index, int rows, int cols);

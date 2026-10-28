@@ -23,16 +23,18 @@ constexpr int NUMBER_OF_GOOD_BLOCKS = 5;
 constexpr int NUMBER_OF_BAD_TILES = 20;
 constexpr float BLOCK_DIMENSION = 25.0f;
 constexpr float TILE_DIMENSION = 25.0f;
-constexpr float ACCELERATION_OF_GRAVITY = 50.0f;
+constexpr float ACCELERATION_OF_GRAVITY = 25.0f;
 
 constexpr float THRUST = 100.0f;
 constexpr float DECELERATION =  50.0f;
 constexpr float ACCELERATION = 75.0f;
+//constexpr float FIXED_TIMESTEP = 1.0f / 60.0f;
 
 //Global Variables
 AppStatus gAppStatus = RUNNING;
 float gPreviousTicks = 0.0f;
 //float gTimeAccumulator = 0.0f;
+int fuel = 600;
 
 Entity *gProtag = nullptr;
 Entity *gTiles = nullptr;
@@ -62,6 +64,7 @@ void initialize() {
         "assets/kirby_tornado.png",
         ATLAS,
         {4, 12},
+        PLAYER,
         animationAtlas
     );
     gProtag->setColliderDimensions({gProtag->getScale().x / 3.0f, gProtag->getScale().y / 3.0f});
@@ -78,6 +81,7 @@ void initialize() {
             leftMostX + i * TILE_DIMENSION,
             ORIGIN.y + TILE_DIMENSION
         });
+        gTiles[i].setEntityType(TILE);
     }
     gTiles[NUMBER_OF_BAD_TILES - 1].setTexture("assets/block.png");
     gTiles[NUMBER_OF_BAD_TILES - 1].setScale({ TILE_DIMENSION, TILE_DIMENSION });
@@ -86,6 +90,7 @@ void initialize() {
         ORIGIN.y + TILE_DIMENSION,
         ORIGIN.y - TILE_DIMENSION
     });
+    gTiles[NUMBER_OF_BAD_TILES - 1].setEntityType(PLATFORM);
 
     SetTargetFPS(FPS);
 }
@@ -100,7 +105,14 @@ void processInput() {
     }
 
 
-    if (IsKeyDown(KEY_W)) gProtag->thrust(THRUST);
+    if (IsKeyDown(KEY_W)) {
+        gProtag->thrust(THRUST);
+        fuel--;
+    }
+    else {
+        gProtag->falling();
+        fuel++;
+    }
     //else if (!IsKeyPressed(KEY_W)) gProtag->setAcceleration({gProtag->getAcceleration().x, ACCELERATION_OF_GRAVITY});
 
     //apply drifting
@@ -118,24 +130,34 @@ void update() {
     float deltaTime = ticks - gPreviousTicks;
     gPreviousTicks = ticks;
 
-    //deltaTime += gTimeAccumulator;
-
+    // deltaTime += gTimeAccumulator;
+    // if (deltaTime < FIXED_TIMESTEP) {
+    //     gTimeAccumulator = deltaTime;
+    //     return;
+    // }
     gProtag->update(deltaTime, gTiles, NUMBER_OF_BAD_TILES);
 
     for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
         gTiles[i].update(deltaTime, nullptr, 0);
     }
-   // gTimeAccumulator = deltaTime;
+
+    if (gProtag->getPosition().x < -50.0f || gProtag->getPosition().y < -50.0f ||
+        gProtag->getPosition().x > SCREEN_WIDTH + 50.0 || gProtag->getPosition().y > SCREEN_HEIGHT + 50.0) {
+        gAppStatus = TERMINATED;
+    }
+
+
 }
 
 void render() {
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
 
     gProtag->render();
     for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
         gTiles[i].render();
     }
+    DrawText(TextFormat("Fuel: %1", fuel), 100.0, 100.0, 60.0, WHITE);
     EndDrawing();
 }
 
