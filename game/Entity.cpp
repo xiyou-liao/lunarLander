@@ -83,9 +83,8 @@ void Entity::checkCollisionY(
                 mVelocity.y         = 0;
                 mIsCollidingBottom  = true;
                 if (collidableEntity->mEntityType == TILE) {
-                   // collidableEntity->deactivate();
                     failMission();
-                }else if (collidableEntity->mEntityType == PLATFORM) {
+                }else if (collidableEntity->mEntityType == PLATFORM || collidableEntity->mEntityType == MOVING) {
                     missionSuccess();
                 }
             }
@@ -258,12 +257,26 @@ void Entity::update(
    // std::cout << "after animate " << mDirection << std::endl;
     mPosition.x += mVelocity.x * deltaTime;
 
+
+
     checkCollisionX(collidableEntities, collisionCheckCount);
     checkCollisionY(collidableEntities, collisionCheckCount);
     if (mEntityType == PLAYER) {
         setDirection();
         animate(deltaTime);
+    } else if (mEntityType == MOVING) {
+        if (mDirection == RIGHT && mPosition.x < 1200.0 - 100.0) mPosition.x += mSpeed * deltaTime;
+        else if (mDirection == LEFT && mPosition.x > 100.0) mPosition.x -= mSpeed * deltaTime;
+        if (mPosition.x > 1200.0 - 100.0) {
+            mPosition.x = 1050.0;
+            mDirection = LEFT;
+        }
+        else if (mPosition.x < 100.0) {
+            mPosition.x = 150.0;
+            mDirection = RIGHT;
+        }
     }
+
 
 }
 

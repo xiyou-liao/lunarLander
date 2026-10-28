@@ -26,22 +26,27 @@ constexpr float TILE_DIMENSION = 25.0f;
 constexpr float ACCELERATION_OF_GRAVITY = 15.0f;
 
 constexpr float THRUST = 50.0f;
-constexpr float DECELERATION =  25.0f;
+constexpr float DECELERATION =  50.0f;
 constexpr float ACCELERATION = 50.0f;
 //constexpr float FIXED_TIMESTEP = 1.0f / 60.0f;
 constexpr int MAX_FUEL = 400;
+
 //Global Variables
 AppStatus gAppStatus = RUNNING;
 float gPreviousTicks = 0.0f;
 //float gTimeAccumulator = 0.0f;
-int fuel = MAX_FUEL;
-bool stopUpdates = false;
-
-
+float fuel = MAX_FUEL;
+float fuelConsumption = 0.2f;
+bool kirbyExplode = false;
+bool missionSuccess = false;
+float gAngle = 0.0f;
 
 Entity *gProtag = nullptr;
 Entity *gTiles = nullptr;
-//bool isMissionFailed = false;
+
+Texture2D gExplosionTexture;
+Vector2 gScaleExplosion = {150.0f, 100.0f};
+Vector2 gMissionStatusPosition = {400.0f, ORIGIN.y - 100.0f};
 
 //Function Declarations
 void initialize();
@@ -49,7 +54,25 @@ void processInput();
 void update();
 void render();
 void shutdown();
-//void failMission();
+void renderObject();
+
+void renderObject(const Texture2D* texture, const Vector2* position, const Vector2* scale) {
+    Rectangle textureArea = {
+        0.0f, 0.0f,
+        static_cast<float>(texture->width), static_cast<float>(texture->height)
+    };
+
+    Rectangle destinationArea = {
+        position->x, position->y,
+        static_cast<float>(scale->x), static_cast<float>(scale->y)
+    };
+
+    Vector2 originOffset = {
+        static_cast<float>(scale->x) / 2.0f, static_cast<float>(scale->y) / 2.0f
+    };
+
+    DrawTexturePro(*texture, textureArea, destinationArea, originOffset, gAngle, WHITE);
+}
 
 void initialize() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Kirby Lunar Lander");
@@ -89,7 +112,7 @@ void initialize() {
         {1, 1, 2, 3, 4, 5, 4, 3, 3, 3, 2, 2, 1, 1, 0, 1, 2, 3, 4, 4, 4, 4, 5, 5, 6, 7, 8,
         9, 10, 10, 11, 12, 13, 14, 15, 14, 13, 12, 12, 11, 11, 10, 9, 9, 9, 8, 7, 6, 5, 4};
 
-    for (size_t i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
+    for (size_t i = 0; i<NUMBER_OF_TOTAL_BLOCKS-1; i++) {
         gTiles[i].setPosition({
             i * TILE_DIMENSION,
             SCREEN_HEIGHT - terrain[i] * TILE_DIMENSION
@@ -101,31 +124,43 @@ void initialize() {
         gTiles[platformLocations[i]].setTexture("assets/diamond_ore.png");
         gTiles[platformLocations[i]].setEntityType(PLATFORM);
     }
+
+    //moving platform
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setTexture("assets/diamond_ore.png");
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setEntityType(MOVING);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setPosition({SCREEN_WIDTH - 105.0, 350.0f});
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setSpeed(50.0);
+
+
+    gExplosionTexture = LoadTexture("assets/explosion.png");
     SetTargetFPS(FPS);
 }
 
 void processInput() {
     gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
     if (fuel > 0) {
-        // stopUpdates = true;
-        // return;
         if (IsKeyDown(KEY_W)) {
             gProtag->thrust(THRUST);
-            if (fuel > 0 ) fuel --;
+            if (fuel > 0 ) fuel -= fuelConsumption;
         }
         if (IsKeyDown(KEY_A)) {
             gProtag->accelerateLeft(ACCELERATION);
-            if (fuel > 0 ) fuel --;
+            if (fuel > 0 ) fuel -= fuelConsumption;
         }
         else if (IsKeyDown(KEY_D)) {
             gProtag->accelerateRight(ACCELERATION);
-            if (fuel > 0 ) fuel --;
+            if (fuel > 0 ) fuel -= fuelConsumption;
         }
-    }
-    else {
+        else {
+            if (gProtag->getVelocity().x > 0.0) {gProtag->setAccelerationX(-DECELERATION);}
+            else if (gProtag->getVelocity().x < 0.0) {gProtag->setAccelerationX(DECELERATION);}
+        }
+    }else {
+        if (fuel < 0) fuel = 0;
         if (gProtag->getVelocity().x > 0.0) {gProtag->setAccelerationX(-DECELERATION);}
         else if (gProtag->getVelocity().x < 0.0) {gProtag->setAccelerationX(DECELERATION);}
     }
+
 
     if (getLength(gProtag->getMovement()) > 1.0f) {
         gProtag->normalizeMovement();
@@ -160,12 +195,10 @@ void update() {
     //     gProtag->failMission();
     // }
     if (gProtag->getMissionStatus() == FAIL) {
-        cout << "Mission Failed" << endl;
-        stopUpdates = true;
+        kirbyExplode = true;
     }
     else if (gProtag->getMissionStatus() == SUCCESS) {
-        cout << "Mission Success" << endl;
-        stopUpdates = true;
+        missionSuccess = true;
     }
 }
 
@@ -177,7 +210,15 @@ void render() {
     for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
         gTiles[i].render();
     }
-    DrawText(TextFormat("Fuel: %d", fuel), 100.0, 100.0, 60.0, WHITE);
+    DrawText(TextFormat("Fuel: %f", fuel), 100.0, 100.0, 30.0, WHITE);
+    if (kirbyExplode) {
+        renderObject(&gExplosionTexture, &gProtag->getPosition(), &gScaleExplosion);
+        DrawText("MISSION FAIL", gMissionStatusPosition.x, gMissionStatusPosition.y, 30.0, RED);
+        gAppStatus = TERMINATED;
+    }else if (missionSuccess) {
+        DrawText("MISSION SUCCESS", gMissionStatusPosition.x, gMissionStatusPosition.y, 50.0, GREEN);
+        gAppStatus = TERMINATED;
+    }
     EndDrawing();
 }
 
@@ -191,7 +232,7 @@ int main() {
     initialize();
     while (gAppStatus == RUNNING) {
         processInput();
-        if (!stopUpdates) update();
+        update();
         render();
     }
 

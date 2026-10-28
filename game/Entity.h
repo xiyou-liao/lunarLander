@@ -5,7 +5,7 @@
 
 enum Direction {UP, LEFT, RIGHT, DOWN};
 enum EntityStatus {ACTIVE, INACTIVE};
-enum EntityType {PLAYER, TILE, PLATFORM, NONE};
+enum EntityType {PLAYER, TILE, PLATFORM, MOVING, NONE};
 
 class Entity {
 public:
