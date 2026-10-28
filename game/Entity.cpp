@@ -83,9 +83,10 @@ void Entity::checkCollisionY(
                 mVelocity.y         = 0;
                 mIsCollidingBottom  = true;
                 if (collidableEntity->mEntityType == TILE) {
-                    collidableEntity->deactivate();
+                   // collidableEntity->deactivate();
+                    failMission();
                 }else if (collidableEntity->mEntityType == PLATFORM) {
-                    deactivate();
+                    missionSuccess();
                 }
             }
             else if (mVelocity.y < 0)
@@ -93,7 +94,6 @@ void Entity::checkCollisionY(
                 mPosition.y     += yOverlap;
                 mVelocity.y      = 0;
                 mIsCollidingTop  = true;
-
 
             }
         }
@@ -137,6 +137,10 @@ void Entity::checkCollisionX(
 
                 // Collision!
                 mIsCollidingRight = true;
+                if (collidableEntity->mEntityType == TILE) {
+                    //collidableEntity->deactivate();
+                    failMission();
+                }
             }
             else if (mVelocity.x < 0)
             {
@@ -145,6 +149,10 @@ void Entity::checkCollisionX(
 
                 // Collision!
                 mIsCollidingLeft = true;
+                if (collidableEntity->mEntityType == TILE) {
+                    //collidableEntity->deactivate();
+                    failMission();
+                }
             }
         }
     }
@@ -177,23 +185,39 @@ bool Entity::isColliding(Entity *other) const
  *
  * @param deltaTime represents the time elapsed since the last frame update.
  */
+
 void Entity::animate(float deltaTime)
 {
-    std::cout << "direction " << mDirection << std::endl;
-    auto it = mAnimationAtlas.find(mDirection);
-    if (it != mAnimationAtlas.end()) {
-        mAnimationTime += deltaTime;
-        float secondsPerFrame = 1.0f / mFrameSpeed;
-
-        if (mAnimationTime >= secondsPerFrame)
-        {
-            mAnimationTime = 0.0f;
-
-            mCurrentFrameIndex++;
-            mCurrentFrameIndex %= it->second.size();
-        }
-    }
+    // if (mEntityType == PLAYER) {
+    //     std::cout << "Animation direction: " << mDirection;
+    // }
+    // //std::cout << "inside animate " << mDirection << std::endl;
+    // auto it = mAnimationAtlas.find(mDirection);
+    // if (it != mAnimationAtlas.end()) {
+    //     mAnimationTime += deltaTime;
+    //     float secondsPerFrame = 1.0f / mFrameSpeed;
+    //
+    //     if (mAnimationTime >= secondsPerFrame)
+    //     {
+    //         mAnimationTime = 0.0f;
+    //
+    //         mCurrentFrameIndex++;
+    //         mCurrentFrameIndex %= it->second.size();
+    //     }
+    // }
     //mAnimationIndices = mAnimationAtlas.at(mDirection);
+    mAnimationIndices = mAnimationAtlas.at(mDirection);
+
+    mAnimationTime += deltaTime;
+    float secondsPerFrame = 1.0f / mFrameSpeed;
+
+    if (mAnimationTime >= secondsPerFrame)
+    {
+        mAnimationTime = 0.0f;
+
+        mCurrentFrameIndex++;
+        mCurrentFrameIndex %= mAnimationIndices.size();
+    }
 
 
 }
@@ -230,12 +254,16 @@ void Entity::update(
     mVelocity.y += mAcceleration.y * deltaTime;
 
     mPosition.y += mVelocity.y * deltaTime;
-    checkCollisionY(collidableEntities, collisionCheckCount);
 
+   // std::cout << "after animate " << mDirection << std::endl;
     mPosition.x += mVelocity.x * deltaTime;
-    checkCollisionX(collidableEntities, collisionCheckCount);
 
-    animate(deltaTime);
+    checkCollisionX(collidableEntities, collisionCheckCount);
+    checkCollisionY(collidableEntities, collisionCheckCount);
+    if (mEntityType == PLAYER) {
+        setDirection();
+        animate(deltaTime);
+    }
 
 }
 

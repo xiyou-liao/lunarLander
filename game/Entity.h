@@ -39,29 +39,39 @@ public:
    //void moveUp() {mMovement.y = -1; mDirection = UP}
     void accelerateLeft(float acceleration) {
         mAcceleration.x = -acceleration;
-        mDirection = LEFT;
+       // mDirection = LEFT;
        // std::cout << "acclerating left "<< mPosition.x<< " " << mPosition.y << std::endl;
     }
     void accelerateRight(float acceleration) {
         mAcceleration.x = acceleration;
-        mDirection = RIGHT;
+        //mDirection = RIGHT;
         //std::cout <<"accelerating right "<< mPosition.x<< " " << mPosition.y <<std::endl;
     }
     // void accelerateUp() {mAcceleration.y -= 1; mDirection = UP;}
     // void accelerateDown() {mAcceleration.y += 1; mDirection = DOWN;}
     void resetAcceleration(Vector2 acc) {
         mAcceleration = acc;
-        if (mVelocity.y < 0.0f) mDirection = UP;
-        else if (mVelocity.y > 0.0f) mDirection = DOWN;
+       // if (mVelocity.y < 0.0f) mDirection = UP;
+       // else if (mVelocity.y > 0.0f) mDirection = DOWN;
     }
 
     void thrust(float amountThrust) {
         mAcceleration.y = -amountThrust;
-        mDirection = UP;
+        //mDirection = UP;
     }
-    void falling() {
-        if (mVelocity.y < 0.0f) mDirection = UP;
-        else if (mVelocity.y > 0.0f) mDirection = DOWN;
+    // void falling() {
+    //    // if (mVelocity.y < 0.0f) mDirection = UP;
+    //    // else if (mVelocity.y > 0.0f) mDirection = DOWN;
+    //    // std::cout <<"y velocity when falling " << mVelocity.y <<std::endl;
+    // }
+
+    void setDirection() {
+        if (mEntityType != PLAYER) return;
+        if (mVelocity.x > 0.0f) mDirection = RIGHT;
+        else if (mVelocity.x < 0.0f) mDirection = LEFT;
+
+        if (mVelocity.y > mVelocity.x) mDirection = DOWN;
+        else if (mVelocity.y < 0.0f) mDirection = UP;
     }
     bool isOnPlatform() const;
     //Getters
@@ -74,6 +84,7 @@ public:
     const Vector2& getSpriteSheetDimensions() const {return mSpriteSheetDimensions;}
     const Direction& getDirection() const {return mDirection;}
     const EntityType& getEntityType() const {return mEntityType;}
+    const MissionStatus& getMissionStatus() const {return missionStatus;}
 
     void setEntityType(EntityType entityType) {mEntityType = entityType;}
     void setPosition(Vector2 newPosition)
@@ -101,6 +112,12 @@ public:
     // { mJumpingPower = newJumpingPower;         }
     void setAngle(float newAngle)
     { mAngle = newAngle;                       }
+    void failMission() {
+        missionStatus = FAIL;
+    }
+    void missionSuccess() {
+        missionStatus = SUCCESS;
+    }
 private:
     Vector2 mPosition;
     Vector2 mMovement;
@@ -143,8 +160,10 @@ private:
         mIsCollidingLeft   = false;
     }
     //bool isActive() {return mEntityStatus == ACTIVE;}
+
     void animate(float deltaTime);
     bool isThrusting;
+    MissionStatus missionStatus = INPROGRESS;
 };
 
 #endif //LUNARLANDER_ENTITY_H

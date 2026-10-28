@@ -19,25 +19,29 @@ constexpr int FPS = 120;
 
 constexpr Vector2 ORIGIN = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
 
-constexpr int NUMBER_OF_GOOD_BLOCKS = 5;
-constexpr int NUMBER_OF_BAD_TILES = 20;
+//constexpr int NUMBER_OF_PLATFORMS = 5;
+constexpr int NUMBER_OF_TOTAL_BLOCKS = 50;
 constexpr float BLOCK_DIMENSION = 25.0f;
 constexpr float TILE_DIMENSION = 25.0f;
-constexpr float ACCELERATION_OF_GRAVITY = 25.0f;
+constexpr float ACCELERATION_OF_GRAVITY = 15.0f;
 
-constexpr float THRUST = 100.0f;
-constexpr float DECELERATION =  50.0f;
-constexpr float ACCELERATION = 75.0f;
+constexpr float THRUST = 50.0f;
+constexpr float DECELERATION =  25.0f;
+constexpr float ACCELERATION = 50.0f;
 //constexpr float FIXED_TIMESTEP = 1.0f / 60.0f;
-
+constexpr int MAX_FUEL = 400;
 //Global Variables
 AppStatus gAppStatus = RUNNING;
 float gPreviousTicks = 0.0f;
 //float gTimeAccumulator = 0.0f;
-int fuel = 600;
+int fuel = MAX_FUEL;
+bool stopUpdates = false;
+
+
 
 Entity *gProtag = nullptr;
 Entity *gTiles = nullptr;
+//bool isMissionFailed = false;
 
 //Function Declarations
 void initialize();
@@ -45,6 +49,7 @@ void processInput();
 void update();
 void render();
 void shutdown();
+//void failMission();
 
 void initialize() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Kirby Lunar Lander");
@@ -60,7 +65,7 @@ void initialize() {
 
     gProtag = new Entity(
         {100.0f, 100.0f},
-        {100.0f * sizeRatio, 100.0f},
+        {75.0f * sizeRatio, 75.0f},
         "assets/kirby_tornado.png",
         ATLAS,
         {4, 12},
@@ -71,51 +76,56 @@ void initialize() {
     gProtag->setAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
 
     // --------------------------------------
-    gTiles = new Entity[NUMBER_OF_BAD_TILES];
-    float leftMostX = ORIGIN.x - (NUMBER_OF_BAD_TILES * TILE_DIMENSION)/2.0f;
-    for (int i = 0; i<NUMBER_OF_BAD_TILES-1; i++) {
+
+    gTiles = new Entity[NUMBER_OF_TOTAL_BLOCKS];
+    float leftMostX = ORIGIN.x - (NUMBER_OF_TOTAL_BLOCKS * TILE_DIMENSION)/2.0f;
+    for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
         gTiles[i].setTexture("assets/block.png");
         gTiles[i].setScale({TILE_DIMENSION, TILE_DIMENSION});
         gTiles[i].setColliderDimensions({TILE_DIMENSION, TILE_DIMENSION});
-        gTiles[i].setPosition({
-            leftMostX + i * TILE_DIMENSION,
-            ORIGIN.y + TILE_DIMENSION
-        });
         gTiles[i].setEntityType(TILE);
     }
-    gTiles[NUMBER_OF_BAD_TILES - 1].setTexture("assets/block.png");
-    gTiles[NUMBER_OF_BAD_TILES - 1].setScale({ TILE_DIMENSION, TILE_DIMENSION });
-    gTiles[NUMBER_OF_BAD_TILES - 1].setColliderDimensions({ TILE_DIMENSION, TILE_DIMENSION });
-    gTiles[NUMBER_OF_BAD_TILES - 1].setPosition({
-        ORIGIN.y + TILE_DIMENSION,
-        ORIGIN.y - TILE_DIMENSION
-    });
-    gTiles[NUMBER_OF_BAD_TILES - 1].setEntityType(PLATFORM);
+    vector<int> terrain =
+        {1, 1, 2, 3, 4, 5, 4, 3, 3, 3, 2, 2, 1, 1, 0, 1, 2, 3, 4, 4, 4, 4, 5, 5, 6, 7, 8,
+        9, 10, 10, 11, 12, 13, 14, 15, 14, 13, 12, 12, 11, 11, 10, 9, 9, 9, 8, 7, 6, 5, 4};
 
+    for (size_t i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
+        gTiles[i].setPosition({
+            i * TILE_DIMENSION,
+            SCREEN_HEIGHT - terrain[i] * TILE_DIMENSION
+        });
+    }
+
+    vector<int> platformLocations = {7, 14, 19, 44};
+    for (size_t i = 0; i<platformLocations.size(); i++) {
+        gTiles[platformLocations[i]].setTexture("assets/diamond_ore.png");
+        gTiles[platformLocations[i]].setEntityType(PLATFORM);
+    }
     SetTargetFPS(FPS);
 }
 
 void processInput() {
     gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
-    if (IsKeyDown(KEY_A)) gProtag->accelerateLeft(ACCELERATION);
-    else if (IsKeyDown(KEY_D)) gProtag->accelerateRight(ACCELERATION);
+    if (fuel > 0) {
+        // stopUpdates = true;
+        // return;
+        if (IsKeyDown(KEY_W)) {
+            gProtag->thrust(THRUST);
+            if (fuel > 0 ) fuel --;
+        }
+        if (IsKeyDown(KEY_A)) {
+            gProtag->accelerateLeft(ACCELERATION);
+            if (fuel > 0 ) fuel --;
+        }
+        else if (IsKeyDown(KEY_D)) {
+            gProtag->accelerateRight(ACCELERATION);
+            if (fuel > 0 ) fuel --;
+        }
+    }
     else {
         if (gProtag->getVelocity().x > 0.0) {gProtag->setAccelerationX(-DECELERATION);}
         else if (gProtag->getVelocity().x < 0.0) {gProtag->setAccelerationX(DECELERATION);}
     }
-
-
-    if (IsKeyDown(KEY_W)) {
-        gProtag->thrust(THRUST);
-        fuel--;
-    }
-    else {
-        gProtag->falling();
-        fuel++;
-    }
-    //else if (!IsKeyPressed(KEY_W)) gProtag->setAcceleration({gProtag->getAcceleration().x, ACCELERATION_OF_GRAVITY});
-
-    //apply drifting
 
     if (getLength(gProtag->getMovement()) > 1.0f) {
         gProtag->normalizeMovement();
@@ -135,9 +145,9 @@ void update() {
     //     gTimeAccumulator = deltaTime;
     //     return;
     // }
-    gProtag->update(deltaTime, gTiles, NUMBER_OF_BAD_TILES);
+    gProtag->update(deltaTime, gTiles, NUMBER_OF_TOTAL_BLOCKS);
 
-    for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
+    for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
         gTiles[i].update(deltaTime, nullptr, 0);
     }
 
@@ -146,7 +156,17 @@ void update() {
         gAppStatus = TERMINATED;
     }
 
-
+    // if (fuel == 0) {
+    //     gProtag->failMission();
+    // }
+    if (gProtag->getMissionStatus() == FAIL) {
+        cout << "Mission Failed" << endl;
+        stopUpdates = true;
+    }
+    else if (gProtag->getMissionStatus() == SUCCESS) {
+        cout << "Mission Success" << endl;
+        stopUpdates = true;
+    }
 }
 
 void render() {
@@ -154,10 +174,10 @@ void render() {
     ClearBackground(BLACK);
 
     gProtag->render();
-    for (int i = 0; i<NUMBER_OF_BAD_TILES; i++) {
+    for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
         gTiles[i].render();
     }
-    DrawText(TextFormat("Fuel: %1", fuel), 100.0, 100.0, 60.0, WHITE);
+    DrawText(TextFormat("Fuel: %d", fuel), 100.0, 100.0, 60.0, WHITE);
     EndDrawing();
 }
 
@@ -171,7 +191,7 @@ int main() {
     initialize();
     while (gAppStatus == RUNNING) {
         processInput();
-        update();
+        if (!stopUpdates) update();
         render();
     }
 
