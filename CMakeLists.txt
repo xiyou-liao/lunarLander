@@ -3,7 +3,11 @@ project(lunarLander)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(lunarLander main.cpp)
+add_executable(lunarLander main.cpp
+        game/game.h
+        game/game.cpp
+        game/Entity.h
+        game/Entity.cpp)
 
 target_include_directories(lunarLander PRIVATE
         C:/raylib/include
