@@ -82,6 +82,7 @@ public:
     void missionSuccess() { missionStatus = SUCCESS; }
     void displayCollider();
     void resetMissionStatus() {missionStatus = INPROGRESS;}
+    void resetVelocity() {mVelocity = {0.0f, 0.0f};};
 private:
     Vector2 mPosition;
     Vector2 mMovement;

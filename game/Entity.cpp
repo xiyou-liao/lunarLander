@@ -194,6 +194,7 @@ void Entity::update( float deltaTime, Entity *collidableEntities, int collisionC
     }
 }
 
+
 void Entity::render()
 {
     if (mEntityStatus == INACTIVE) return;

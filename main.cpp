@@ -160,10 +160,12 @@ void processInput() {
         gProtag->normalizeMovement();
     }
 
+    //resets game
     if (IsKeyPressed(KEY_R)) {
         gProtag->setPosition({20.0f, 20.0f});
         gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
         gProtag->resetMissionStatus();
+        gProtag->resetVelocity();
         fuel = MAX_FUEL;
         kirbyExplode = false;
         missionSuccess = false;
@@ -184,8 +186,8 @@ void update() {
     }
 
     //prevents the player from moving off screen
-    if (gProtag->getPosition().x < -10.0f || gProtag->getPosition().y < -10.0f ||
-        gProtag->getPosition().x > SCREEN_WIDTH + 10.0 || gProtag->getPosition().y > SCREEN_HEIGHT + 10.0) {
+    if (gProtag->getPosition().x < -30.0f || gProtag->getPosition().y < -30.0f ||
+        gProtag->getPosition().x > SCREEN_WIDTH + 30.0 || gProtag->getPosition().y > SCREEN_HEIGHT + 30.0) {
         gAppStatus = TERMINATED;
     }
 
