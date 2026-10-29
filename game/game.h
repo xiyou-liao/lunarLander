@@ -14,8 +14,8 @@
 #define LOG(argument) std::cout << argument << '\n'
 
 enum AppStatus   { TERMINATED, RUNNING };
-enum TextureType { SINGLE, ATLAS       };
-enum MissionStatus {SUCCESS, FAIL, INPROGRESS};
+enum TextureType { SINGLE, ATLAS };
+enum MissionStatus { SUCCESS, FAIL, INPROGRESS };
 void normalize(Vector2* vector);
 float getLength(const Vector2& vector);
 Rectangle getUVRectangle(Texture2D* texture, int index, int rows, int cols);

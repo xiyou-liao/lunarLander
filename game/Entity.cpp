@@ -9,7 +9,8 @@ Entity::Entity() :
     mAnimationAtlas{}, mAnimationIndices{}, mDirection{ RIGHT },
     mFrameSpeed{ 0 }, mSpeed{ DEFAULT_SPEED }, mAngle{ 0.0f } {}
 
-Entity::Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath, EntityType entityType) :
+Entity::Entity(const Vector2& position, const Vector2& scale,
+                const char* textureFilePath, EntityType entityType) :
     mPosition{ position }, mMovement{ 0.0f, 0.0f },
     mVelocity{ 0.0f, 0.0f }, mAcceleration{ 0.0f, 0.0f },
     mScale{ scale }, mColliderDimensions{ scale },
@@ -25,7 +26,7 @@ Entity::Entity(
         TextureType textureType,
         const Vector2& spriteSheetDimensions,
         EntityType entityType,
-        std::map<Direction, std::vector<int>> animationAtlas
+        const std::map<Direction, std::vector<int>>& animationAtlas
 ):
     mPosition{ position }, mMovement{ 0.0f, 0.0f },
     mVelocity{ 0.0f, 0.0f }, mAcceleration{ 0.0f, 0.0f },
@@ -40,87 +41,52 @@ Entity::Entity(
 
 Entity::~Entity() { UnloadTexture(mTexture); }
 
-/**
- * Iterates through a list of collidable entities, checks for collisions with
- * the player entity, and resolves any vertical overlap by adjusting the
- * player's position and velocity accordingly.
- *
- * @param collidableEntities An array of pointers to `Entity` objects that
- * represent the entities that the current `Entity` instance can potentially
- * collide with. The `collisionCheckCount` parameter specifies the number of
- * entities in the `collidableEntities` array that need to be checked for
- * collision.
- * @param collisionCheckCount The number of entities that the current entity
- * (`Entity`) should check for collisions with. This parameter specifies how
- * many entities are in the `collidableEntities` array that need to be checked
- * for collisions with the current entity.
- */
-void Entity::checkCollisionY(
-    Entity *collidableEntities, int collisionCheckCount
-)
-{
-    for (int i = 0; i < collisionCheckCount; i++)
-    {
-        // STEP 1: For every entity that our player can collide with...
+//loops through a list of collidable entities and checks for collisions
+//updates game logic based on what is collided with and how
+void Entity::checkCollisionY( Entity *collidableEntities, int collisionCheckCount ){
+    for (int i = 0; i < collisionCheckCount; i++) {
         Entity *collidableEntity = &collidableEntities[i];
-
-        if (isColliding(collidableEntity))
-        {
-            // STEP 2: Calculate the distance between its centre and our centre
-            //         and use that to calculate the amount of overlap between
-            //         both bodies.
+        //if colliding with an entity, unclip the two objects to prevent being stuck
+        if (isColliding(collidableEntity)) {
             float yDistance = fabs(mPosition.y - collidableEntity->mPosition.y);
             float yOverlap  = fabs(
                 yDistance - (mColliderDimensions.y / 2.0f) -
                 (collidableEntity->mColliderDimensions.y / 2.0f)
             );
 
-            // STEP 3: "Unclip" ourselves from the other entity, and zero our
-            //         vertical velocity.
-            if (mVelocity.y > 0)
-            {
-                mPosition.y        -= yOverlap;
-                mVelocity.y         = 0;
-                mIsCollidingBottom  = true;
+            if (mVelocity.y > 0) {
+                mPosition.y -= yOverlap;
+                mVelocity.y = 0;
+                mIsCollidingBottom = true;
+
+                //if the player hits a bad block, mission fail
+                //else if the player hits a winning platform, mission success
                 if (collidableEntity->mEntityType == TILE) {
                     failMission();
                 }else if (collidableEntity->mEntityType == PLATFORM || collidableEntity->mEntityType == MOVING) {
                     missionSuccess();
                 }
             }
-            else if (mVelocity.y < 0)
-            {
-                mPosition.y     += yOverlap;
-                mVelocity.y      = 0;
-                mIsCollidingTop  = true;
-
+            else if (mVelocity.y < 0) {
+                mPosition.y += yOverlap;
+                mVelocity.y = 0;
+                mIsCollidingTop = true;
             }
         }
     }
 }
 
-void Entity::checkCollisionX(
-    Entity *collidableEntities, int collisionCheckCount
-)
-{
-    for (int i = 0; i < collisionCheckCount; i++)
-    {
+void Entity::checkCollisionX( Entity *collidableEntities, int collisionCheckCount ) {
+    for (int i = 0; i < collisionCheckCount; i++) {
         Entity *collidableEntity = &collidableEntities[i];
 
-        if (isColliding(collidableEntity))
-        {
-            // When standing on a platform, we're always slightly overlapping
-            // it vertically due to gravity, which causes false horizontal
-            // collision detections. So the solution I found is only resolve X
-            // collisions if there's significant Y overlap, preventing the
-            // platform we're standing on from acting like a wall.
+        if (isColliding(collidableEntity)) {
+            //corrects for false horizontal collisions
             float yDistance = fabs(mPosition.y - collidableEntity->mPosition.y);
             float yOverlap  = fabs(
                 yDistance - (mColliderDimensions.y / 2.0f) -
                 (collidableEntity->mColliderDimensions.y / 2.0f)
             );
-
-            // Skip if barely touching vertically (standing on platform)
             if (yOverlap < Y_COLLISION_THRESHOLD) continue;
 
             float xDistance = fabs(mPosition.x - collidableEntity->mPosition.x);
@@ -129,27 +95,21 @@ void Entity::checkCollisionX(
                 (collidableEntity->mColliderDimensions.x / 2.0f)
             );
 
-            if (mVelocity.x > 0)
-            {
+            if (mVelocity.x > 0) {
                 mPosition.x -= xOverlap;
-                mVelocity.x  = 0;
+                mVelocity.x = 0;
 
-                // Collision!
                 mIsCollidingRight = true;
-                if (collidableEntity->mEntityType == TILE) {
-                    //collidableEntity->deactivate();
+                if (collidableEntity->mEntityType == TILE) { //fail if hit wrong block
                     failMission();
                 }
             }
-            else if (mVelocity.x < 0)
-            {
+            else if (mVelocity.x < 0) {
                 mPosition.x += xOverlap;
-                mVelocity.x  = 0;
+                mVelocity.x = 0;
 
-                // Collision!
                 mIsCollidingLeft = true;
-                if (collidableEntity->mEntityType == TILE) {
-                    //collidableEntity->deactivate();
+                if (collidableEntity->mEntityType == TILE) {//fail if hit wrong block
                     failMission();
                 }
             }
@@ -157,19 +117,9 @@ void Entity::checkCollisionX(
     }
 }
 
-/**
- * Checks if two entities are colliding based on their positions and collider
- * dimensions.
- *
- * @param other represents another Entity with which you want to check for
- * collision. It is a pointer to the Entity class.
- *
- * @return returns `true` if the two entities are colliding based on their
- * positions and collider dimensions, and `false` otherwise.
- */
-bool Entity::isColliding(Entity *other) const
-{
-    if (other == nullptr){return false;}
+//checks if two entities are colliding
+bool Entity::isColliding(Entity *other) const {
+    if (other == nullptr) {return false;}
     float xDistance = fabs(mPosition.x - other->getPosition().x) -
         ((mColliderDimensions.x + other->getColliderDimensions().x) / 2.0f);
     float yDistance = fabs(mPosition.y - other->getPosition().y) -
@@ -178,51 +128,23 @@ bool Entity::isColliding(Entity *other) const
     return xDistance < 0.0f && yDistance < 0.0f;
 }
 
-/**
- * Updates the current frame index of an entity's animation based on the
- * elapsed time and frame speed.
- *
- * @param deltaTime represents the time elapsed since the last frame update.
- */
-
-void Entity::animate(float deltaTime)
-{
-    // if (mEntityType == PLAYER) {
-    //     std::cout << "Animation direction: " << mDirection;
-    // }
-    // //std::cout << "inside animate " << mDirection << std::endl;
-    // auto it = mAnimationAtlas.find(mDirection);
-    // if (it != mAnimationAtlas.end()) {
-    //     mAnimationTime += deltaTime;
-    //     float secondsPerFrame = 1.0f / mFrameSpeed;
-    //
-    //     if (mAnimationTime >= secondsPerFrame)
-    //     {
-    //         mAnimationTime = 0.0f;
-    //
-    //         mCurrentFrameIndex++;
-    //         mCurrentFrameIndex %= it->second.size();
-    //     }
-    // }
-    //mAnimationIndices = mAnimationAtlas.at(mDirection);
+//updates frame index to get the correct animation frame
+void Entity::animate(float deltaTime) {
     mAnimationIndices = mAnimationAtlas.at(mDirection);
 
     mAnimationTime += deltaTime;
     float secondsPerFrame = 1.0f / mFrameSpeed;
 
-    if (mAnimationTime >= secondsPerFrame)
-    {
+    if (mAnimationTime >= secondsPerFrame) {
         mAnimationTime = 0.0f;
 
         mCurrentFrameIndex++;
         mCurrentFrameIndex %= mAnimationIndices.size();
     }
-
-
 }
 
-// void Entity::displayCollider()
-// {
+//shows a green box for each entity that marks the boundary of its collision zone
+// void Entity::displayCollider() {
 //     // draw the collision box
 //     Rectangle colliderBox = {
 //         mPosition.x - mColliderDimensions.x / 2.0f,
@@ -240,31 +162,25 @@ void Entity::animate(float deltaTime)
 //     );
 // }
 
-void Entity::update(
-    float deltaTime, Entity *collidableEntities, int collisionCheckCount
-) {
+void Entity::update( float deltaTime, Entity *collidableEntities, int collisionCheckCount) {
     if (mEntityStatus == INACTIVE) return;
 
     resetColliderFlags();
-
-    //mVelocity.x = mMovement.x * mSpeed;
 
     mVelocity.x += mAcceleration.x * deltaTime;
     mVelocity.y += mAcceleration.y * deltaTime;
 
     mPosition.y += mVelocity.y * deltaTime;
 
-   // std::cout << "after animate " << mDirection << std::endl;
     mPosition.x += mVelocity.x * deltaTime;
-
-
 
     checkCollisionX(collidableEntities, collisionCheckCount);
     checkCollisionY(collidableEntities, collisionCheckCount);
-    if (mEntityType == PLAYER) {
+
+    if (mEntityType == PLAYER) { //only animate the player
         setDirection();
         animate(deltaTime);
-    } else if (mEntityType == MOVING) {
+    } else if (mEntityType == MOVING) { //makes the platform move left to right on the screen
         if (mDirection == RIGHT && mPosition.x < 1200.0 - 100.0) mPosition.x += mSpeed * deltaTime;
         else if (mDirection == LEFT && mPosition.x > 100.0) mPosition.x -= mSpeed * deltaTime;
         if (mPosition.x > 1200.0 - 100.0) {
@@ -276,13 +192,8 @@ void Entity::update(
             mDirection = RIGHT;
         }
     }
-
-
 }
 
-// bool Entity::isOnPlatform() const {
-//     if ()
-// }
 void Entity::render()
 {
     if (mEntityStatus == INACTIVE) return;
@@ -303,7 +214,6 @@ void Entity::render()
         };
         break;
         case ATLAS:
-           // std::cout << "render entity atlas" << std::endl;
         textureArea = getUVRectangle(
             &mTexture,
             mAnimationIndices[mCurrentFrameIndex],
@@ -336,5 +246,5 @@ void Entity::render()
         mAngle, WHITE
     );
 
-   // displayCollider();
+    //displayCollider();
 }

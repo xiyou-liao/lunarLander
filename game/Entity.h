@@ -15,7 +15,8 @@ public:
     static constexpr float Y_COLLISION_THRESHOLD = 0.5f;
 
     Entity();
-    Entity(const Vector2& position, const Vector2& scale, const char* textureFilePath, EntityType entityType);
+    Entity(const Vector2& position, const Vector2& scale,
+            const char* textureFilePath, EntityType entityType);
     Entity(
         const Vector2& position,
         const Vector2& scale,
@@ -23,7 +24,7 @@ public:
         TextureType textureType,
         const Vector2& spriteSheetDimensions,
         EntityType entityType,
-        std::map<Direction, std::vector<int>> animationAtlas
+        const std::map<Direction, std::vector<int>>& animationAtlas
     );
     ~Entity();
 
@@ -33,38 +34,17 @@ public:
 
     void activate() {mEntityStatus = ACTIVE;}
     void deactivate() {mEntityStatus = INACTIVE;}
-
     bool isActive() const {return mEntityStatus == ACTIVE;}
 
-   //void moveUp() {mMovement.y = -1; mDirection = UP}
-    void accelerateLeft(float acceleration) {
-        mAcceleration.x = -acceleration;
-       // mDirection = LEFT;
-       // std::cout << "acclerating left "<< mPosition.x<< " " << mPosition.y << std::endl;
-    }
-    void accelerateRight(float acceleration) {
-        mAcceleration.x = acceleration;
-        //mDirection = RIGHT;
-        //std::cout <<"accelerating right "<< mPosition.x<< " " << mPosition.y <<std::endl;
-    }
-    // void accelerateUp() {mAcceleration.y -= 1; mDirection = UP;}
-    // void accelerateDown() {mAcceleration.y += 1; mDirection = DOWN;}
-    void resetAcceleration(Vector2 acc) {
-        mAcceleration = acc;
-       // if (mVelocity.y < 0.0f) mDirection = UP;
-       // else if (mVelocity.y > 0.0f) mDirection = DOWN;
-    }
+    void accelerateLeft(float acceleration) {mAcceleration.x = -acceleration;}
+    void accelerateRight(float acceleration) {mAcceleration.x = acceleration;}
+    void resetAcceleration(const Vector2& acc) {mAcceleration = acc;}
 
-    void thrust(float amountThrust) {
-        mAcceleration.y = -amountThrust;
-        //mDirection = UP;
-    }
-    // void falling() {
-    //    // if (mVelocity.y < 0.0f) mDirection = UP;
-    //    // else if (mVelocity.y > 0.0f) mDirection = DOWN;
-    //    // std::cout <<"y velocity when falling " << mVelocity.y <<std::endl;
-    // }
+    void thrust(float amountThrust) {mAcceleration.y = -amountThrust;}
 
+    //checks player's velocity to determine the direction it is moving in
+    //priority given to x-direction but if y-velocity is larger than x-velocity,
+    //prioritize down direction to get the falling animation
     void setDirection() {
         if (mEntityType != PLAYER) return;
         if (mVelocity.x > 0.0f) mDirection = RIGHT;
@@ -73,7 +53,7 @@ public:
         if (mVelocity.y > mVelocity.x) mDirection = DOWN;
         else if (mVelocity.y < 0.0f) mDirection = UP;
     }
-    bool isOnPlatform() const;
+
     //Getters
     const Vector2& getPosition() const {return mPosition;}
     const Vector2& getVelocity() const {return mVelocity;}
@@ -82,42 +62,26 @@ public:
     const Vector2& getMovement() const {return mMovement;}
     const Vector2& getColliderDimensions() const {return mColliderDimensions;}
     const Vector2& getSpriteSheetDimensions() const {return mSpriteSheetDimensions;}
-    const Direction& getDirection() const {return mDirection;}
-    const EntityType& getEntityType() const {return mEntityType;}
-    const MissionStatus& getMissionStatus() const {return missionStatus;}
+    Direction getDirection() const {return mDirection;}
+    EntityType getEntityType() const {return mEntityType;}
+    MissionStatus getMissionStatus() const {return missionStatus;}
 
-    void setEntityType(EntityType entityType) {mEntityType = entityType;}
-    void setPosition(Vector2 newPosition)
-    { mPosition = newPosition;                 }
-    void setMovement(Vector2 newMovement)
-    { mMovement = newMovement;                 }
-    void setAcceleration(Vector2 newAcceleration)
-    { mAcceleration = newAcceleration;         }
-    void setAccelerationX(float newAcceleration) {
-        mAcceleration.x += newAcceleration;
-    }
-    void setScale(Vector2 newScale)
-    { mScale = newScale;                       }
-    void setTexture(const char *textureFilepath)
-    {mTexture = LoadTexture(textureFilepath);}
-    void setColliderDimensions(Vector2 newDimensions)
-    { mColliderDimensions = newDimensions;     }
-    void setSpriteSheetDimensions(Vector2 newDimensions)
-    { mSpriteSheetDimensions = newDimensions;  }
-    void setSpeed(int newSpeed)
-    { mSpeed = newSpeed;                       }
-    void setFrameSpeed(int newSpeed)
-    { mFrameSpeed = newSpeed;                  }
-    //void setJumpingPower(float newJumpingPower)
-    // { mJumpingPower = newJumpingPower;         }
-    void setAngle(float newAngle)
-    { mAngle = newAngle;                       }
-    void failMission() {
-        missionStatus = FAIL;
-    }
-    void missionSuccess() {
-        missionStatus = SUCCESS;
-    }
+    void setEntityType(EntityType entityType) { mEntityType = entityType; }
+    void setPosition(const Vector2& newPosition) { mPosition = newPosition; }
+    void setMovement(const Vector2& newMovement) { mMovement = newMovement; }
+    void setAcceleration(const Vector2& newAcceleration) { mAcceleration = newAcceleration; }
+    void setAccelerationX(float newAcceleration) { mAcceleration.x += newAcceleration; }
+    void setScale(Vector2 newScale) { mScale = newScale; }
+    void setTexture(const char *textureFilepath) {mTexture = LoadTexture(textureFilepath); }
+    void setColliderDimensions(Vector2 newDimensions) { mColliderDimensions = newDimensions; }
+    void setSpriteSheetDimensions(Vector2 newDimensions) { mSpriteSheetDimensions = newDimensions; }
+    void setSpeed(int newSpeed) { mSpeed = newSpeed; }
+    void setFrameSpeed(int newSpeed) { mFrameSpeed = newSpeed; }
+    void setAngle(float newAngle) { mAngle = newAngle; }
+    void failMission() { missionStatus = FAIL; }
+    void missionSuccess() { missionStatus = SUCCESS; }
+    void displayCollider();
+    void resetMissionStatus() {missionStatus = INPROGRESS;}
 private:
     Vector2 mPosition;
     Vector2 mMovement;
@@ -134,8 +98,8 @@ private:
     std::map<Direction, std::vector<int>> mAnimationAtlas;
     std::vector<int> mAnimationIndices;
     Direction mDirection = DOWN;
-    int mFrameSpeed;
 
+    int mFrameSpeed;
     int mCurrentFrameIndex = 0;
     float mAnimationTime = 0.0f;
 
@@ -159,8 +123,6 @@ private:
         mIsCollidingRight  = false;
         mIsCollidingLeft   = false;
     }
-    //bool isActive() {return mEntityStatus == ACTIVE;}
-
     void animate(float deltaTime);
     bool isThrusting;
     MissionStatus missionStatus = INPROGRESS;

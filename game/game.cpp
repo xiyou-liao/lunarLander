@@ -1,9 +1,7 @@
 #include "game.h"
 
 float getLength(const Vector2& vector){
-    return sqrtf(
-        pow(vector.x, 2) + pow(vector.y, 2)
-    );
+    return sqrtf(pow(vector.x, 2) + pow(vector.y, 2));
 }
 
 void normalize(Vector2 *vector){
