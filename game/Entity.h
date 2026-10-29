@@ -5,7 +5,7 @@
 
 enum Direction {UP, LEFT, RIGHT, DOWN};
 enum EntityStatus {ACTIVE, INACTIVE};
-enum EntityType {PLAYER, TILE, PLATFORM, MOVING, NONE};
+enum EntityType {PLAYER, TILE, PLATFORM, MOVINGTILE, MOVINGPLATFORM, NONE};
 
 class Entity {
 public:
@@ -83,6 +83,7 @@ public:
     void displayCollider();
     void resetMissionStatus() {missionStatus = INPROGRESS;}
     void resetVelocity() {mVelocity = {0.0f, 0.0f};};
+    void changeDirection(Direction dir) {mDirection = dir;}
 private:
     Vector2 mPosition;
     Vector2 mMovement;

@@ -19,13 +19,12 @@ constexpr int FPS = 120;
 
 constexpr Vector2 ORIGIN = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2};
 
-constexpr int NUMBER_OF_TOTAL_BLOCKS = 50;
+constexpr int NUMBER_OF_TOTAL_BLOCKS = 52;
 constexpr float BLOCK_DIMENSION = 25.0f;
 constexpr float TILE_DIMENSION = 25.0f;
 constexpr float ACCELERATION_OF_GRAVITY = 15.0f;
 
 constexpr float THRUST = 75.0f;
-constexpr float DECELERATION =  50.0f;
 constexpr float ACCELERATION = 50.0f;
 constexpr int MAX_FUEL = 300;
 
@@ -111,7 +110,7 @@ void initialize() {
         9, 10, 10, 11, 12, 13, 14, 15, 14, 13, 12, 12, 11, 11, 10, 9, 9, 9, 8, 7, 6, 5, 4};
 
     //set the position of each tile based on the terrain
-    for (size_t i = 0; i<NUMBER_OF_TOTAL_BLOCKS-1; i++) {
+    for (size_t i = 0; i<NUMBER_OF_TOTAL_BLOCKS-3; i++) {
         gTiles[i].setPosition({
             i * TILE_DIMENSION,
             SCREEN_HEIGHT - terrain[i] * TILE_DIMENSION
@@ -127,15 +126,23 @@ void initialize() {
     }
 
     //moving platform
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setTexture("assets/diamond_ore.png");
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setEntityType(MOVING);
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setPosition({SCREEN_WIDTH - 105.0, 350.0f});
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setSpeed(50.0);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setTexture("assets/diamond_ore.png");
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setEntityType(MOVINGPLATFORM);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setPosition({SCREEN_WIDTH - 105.0, 350.0f});
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setSpeed(50.0);
+
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setEntityType(MOVINGTILE);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setPosition(ORIGIN);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setSpeed(150.0f);
+
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setEntityType(MOVINGTILE);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setPosition({200.0f, 200.0f});
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setSpeed(100.0f);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].changeDirection(LEFT);
 
     gExplosionTexture = LoadTexture("assets/explosion.png");
     SetTargetFPS(FPS);
 }
-
 void processInput() {
     gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
     //with fuel, keys W, A, D changes the acceleration of the player in the corresponding directions
@@ -207,7 +214,7 @@ void render() {
     DrawText(TextFormat("Fuel: %.2f", fuel), 100.0, 50.0, 30.0, WHITE);
     if (kirbyExplode) {
         renderObject(&gExplosionTexture, &gProtag->getPosition(), &gScaleExplosion);
-        DrawText("MISSION FAIL", gMissionStatusPosition.x, gMissionStatusPosition.y, 30.0, RED);
+        DrawText("MISSION FAIL", gMissionStatusPosition.x, gMissionStatusPosition.y, 50.0, RED);
     }else if (missionSuccess) {
         DrawText("MISSION SUCCESS", gMissionStatusPosition.x, gMissionStatusPosition.y, 50.0, GREEN);
     }

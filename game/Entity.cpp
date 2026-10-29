@@ -61,9 +61,9 @@ void Entity::checkCollisionY( Entity *collidableEntities, int collisionCheckCoun
 
                 //if the player hits a bad block, mission fail
                 //else if the player hits a winning platform, mission success
-                if (collidableEntity->mEntityType == TILE) {
+                if (collidableEntity->mEntityType == TILE || collidableEntity->mEntityType == MOVINGTILE) {
                     failMission();
-                }else if (collidableEntity->mEntityType == PLATFORM || collidableEntity->mEntityType == MOVING) {
+                }else if (collidableEntity->mEntityType == PLATFORM || collidableEntity->mEntityType == MOVINGPLATFORM) {
                     missionSuccess();
                 }
             }
@@ -71,6 +71,9 @@ void Entity::checkCollisionY( Entity *collidableEntities, int collisionCheckCoun
                 mPosition.y += yOverlap;
                 mVelocity.y = 0;
                 mIsCollidingTop = true;
+                if (collidableEntity->mEntityType == MOVINGTILE) {
+                    failMission();
+                }
             }
         }
     }
@@ -100,7 +103,7 @@ void Entity::checkCollisionX( Entity *collidableEntities, int collisionCheckCoun
                 mVelocity.x = 0;
 
                 mIsCollidingRight = true;
-                if (collidableEntity->mEntityType == TILE) { //fail if hit wrong block
+                if (collidableEntity->mEntityType == TILE || collidableEntity->mEntityType == MOVINGTILE) {
                     failMission();
                 }
             }
@@ -109,7 +112,7 @@ void Entity::checkCollisionX( Entity *collidableEntities, int collisionCheckCoun
                 mVelocity.x = 0;
 
                 mIsCollidingLeft = true;
-                if (collidableEntity->mEntityType == TILE) {//fail if hit wrong block
+                if (collidableEntity->mEntityType == TILE || collidableEntity->mEntityType == MOVINGTILE) {
                     failMission();
                 }
             }
@@ -180,7 +183,7 @@ void Entity::update( float deltaTime, Entity *collidableEntities, int collisionC
     if (mEntityType == PLAYER) { //only animate the player
         setDirection();
         animate(deltaTime);
-    } else if (mEntityType == MOVING) { //makes the platform move left to right on the screen
+    } else if (mEntityType == MOVINGPLATFORM || mEntityType == MOVINGTILE) { //makes the platform move left to right on the screen
         if (mDirection == RIGHT && mPosition.x < 1200.0 - 100.0) mPosition.x += mSpeed * deltaTime;
         else if (mDirection == LEFT && mPosition.x > 100.0) mPosition.x -= mSpeed * deltaTime;
         if (mPosition.x > 1200.0 - 100.0) {
