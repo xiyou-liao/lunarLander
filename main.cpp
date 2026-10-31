@@ -42,7 +42,7 @@ Entity *gTiles = nullptr;
 
 Texture2D gExplosionTexture;
 Vector2 gScaleExplosion = {150.0f, 100.0f};
-Vector2 gMissionStatusPosition = {400.0f, ORIGIN.y - 100.0f};
+Vector2 gMissionStatusPosition = {375.0f, 100.0f};
 
 //Function Declarations
 void initialize();
@@ -119,7 +119,7 @@ void initialize() {
 
     //indicates where the diamond ore blocks will be placed as the success
     //platform by setting those tiles to type "PLATFORM"
-    vector<int> platformLocations = {7, 14, 19, 46};
+    vector<int> platformLocations = {7, 14, 34, 46};
     for (size_t i = 0; i<platformLocations.size(); i++) {
         gTiles[platformLocations[i]].setTexture("assets/diamond_ore.png");
         gTiles[platformLocations[i]].setEntityType(PLATFORM);
@@ -129,40 +129,39 @@ void initialize() {
     gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setTexture("assets/diamond_ore.png");
     gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setEntityType(MOVINGPLATFORM);
     gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setPosition({SCREEN_WIDTH - 105.0, 350.0f});
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setSpeed(50.0);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-2].setSpeed(100.0);
 
     gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setEntityType(MOVINGTILE);
     gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setPosition(ORIGIN);
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setSpeed(150.0f);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-1].setSpeed(175.0f);
 
     gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setEntityType(MOVINGTILE);
     gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setPosition({200.0f, 200.0f});
-    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setSpeed(100.0f);
+    gTiles[NUMBER_OF_TOTAL_BLOCKS-3].setSpeed(125.0f);
     gTiles[NUMBER_OF_TOTAL_BLOCKS-3].changeDirection(LEFT);
 
     gExplosionTexture = LoadTexture("assets/explosion.png");
     SetTargetFPS(FPS);
 }
 void processInput() {
-    gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
+    if (!kirbyExplode && !missionSuccess) gProtag->resetAcceleration({0.0f, ACCELERATION_OF_GRAVITY});
     //with fuel, keys W, A, D changes the acceleration of the player in the corresponding directions
     //player should drift in the same direction horizontally until an opposing movement key is pressed
     //pressing 'W' will propel the player upward and letting go will have gravity counteract the upward acceleration
-    if (fuel > 0) {
+    if (fuel > 0 && !kirbyExplode && !missionSuccess) {
         if (IsKeyDown(KEY_W)) {
             gProtag->thrust(THRUST);
-            if (fuel > 0 ) fuel -= fuelConsumption;
+            fuel -= fuelConsumption;
         }
         if (IsKeyDown(KEY_A)) {
             gProtag->accelerateLeft(ACCELERATION);
-            if (fuel > 0 ) fuel -= fuelConsumption;
+            fuel -= fuelConsumption;
         }
         else if (IsKeyDown(KEY_D)) {
             gProtag->accelerateRight(ACCELERATION);
-            if (fuel > 0 ) fuel -= fuelConsumption;
+            fuel -= fuelConsumption;
         }
     }else { if (fuel < 0) fuel = 0; }
-
     if (getLength(gProtag->getMovement()) > 1.0f) {
         gProtag->normalizeMovement();
     }
@@ -186,21 +185,23 @@ void update() {
     float deltaTime = ticks - gPreviousTicks;
     gPreviousTicks = ticks;
 
-    gProtag->update(deltaTime, gTiles, NUMBER_OF_TOTAL_BLOCKS);
+    if (!kirbyExplode && !missionSuccess) {
+        gProtag->update(deltaTime, gTiles, NUMBER_OF_TOTAL_BLOCKS);
 
-    for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
-        gTiles[i].update(deltaTime, nullptr, 0);
+        for (int i = 0; i<NUMBER_OF_TOTAL_BLOCKS; i++) {
+            gTiles[i].update(deltaTime, nullptr, 0);
+        }
+
+        //prevents the player from moving off screen
+        if (gProtag->getPosition().x < -30.0f || gProtag->getPosition().y < -30.0f ||
+            gProtag->getPosition().x > SCREEN_WIDTH + 30.0 || gProtag->getPosition().y > SCREEN_HEIGHT + 30.0) {
+            gAppStatus = TERMINATED;
+        }
+
+        //determine the status of the mission when a game-over condition occurs
+        if (gProtag->getMissionStatus() == FAIL) { kirbyExplode = true; }
+        else if (gProtag->getMissionStatus() == SUCCESS) { missionSuccess = true; }
     }
-
-    //prevents the player from moving off screen
-    if (gProtag->getPosition().x < -30.0f || gProtag->getPosition().y < -30.0f ||
-        gProtag->getPosition().x > SCREEN_WIDTH + 30.0 || gProtag->getPosition().y > SCREEN_HEIGHT + 30.0) {
-        gAppStatus = TERMINATED;
-    }
-
-    //determine the status of the mission when a game-over condition occurs
-    if (gProtag->getMissionStatus() == FAIL) { kirbyExplode = true; }
-    else if (gProtag->getMissionStatus() == SUCCESS) { missionSuccess = true; }
 }
 
 void render() {
@@ -233,9 +234,7 @@ int main() {
     initialize();
     while (gAppStatus == RUNNING) {
         processInput();
-        if (!kirbyExplode && !missionSuccess) {
-            update();
-        }
+        update();
         render();
     }
 

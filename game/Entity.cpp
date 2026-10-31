@@ -184,14 +184,14 @@ void Entity::update( float deltaTime, Entity *collidableEntities, int collisionC
         setDirection();
         animate(deltaTime);
     } else if (mEntityType == MOVINGPLATFORM || mEntityType == MOVINGTILE) { //makes the platform move left to right on the screen
-        if (mDirection == RIGHT && mPosition.x < 1200.0 - 100.0) mPosition.x += mSpeed * deltaTime;
-        else if (mDirection == LEFT && mPosition.x > 100.0) mPosition.x -= mSpeed * deltaTime;
-        if (mPosition.x > 1200.0 - 100.0) {
-            mPosition.x = 1050.0;
+        if (mDirection == RIGHT && mPosition.x < 1200.0) mPosition.x += mSpeed * deltaTime;
+        else if (mDirection == LEFT && mPosition.x > 0.0) mPosition.x -= mSpeed * deltaTime;
+        if (mPosition.x > 1200.0) {
+            mPosition.x = 1180.0;
             mDirection = LEFT;
         }
-        else if (mPosition.x < 100.0) {
-            mPosition.x = 150.0;
+        else if (mPosition.x < 0.0) {
+            mPosition.x = 20.0;
             mDirection = RIGHT;
         }
     }
